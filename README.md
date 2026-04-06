@@ -5,12 +5,10 @@
 
 사용자의 자연어 입력을 분석하여 일정(Schedules), 할 일(Todos), 메모(Memos)를 관리하며, **RAG 파이프라인(Retrieval-Augmented Generation)** 기능을 통해 문서 기반의 질의응답을 제공하는 에이전트를 포함하고 있습니다. 또한 Langfuse를 통한 LLM 관측성(Observability) 및 PostgreSQL(pgroonga) 기반의 검색 환경을 갖추고 있습니다.
 
-프로젝트의 상세한 개발 기록과 설계 의도는 아래 블로그에서 확인하실 수 있습니다.
-- **개발 기록 (PoC 기록)** : [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
-
-아래 프론트엔드를 통해 에이전트를 테스트 할 수 있습니다.
-
 프론트엔드 프로젝트 : https://github.com/devnneth/agent-poc-frontend
+
+이 프로젝트의 개발 스토리를 아래 블로그에서 확인하실 수 있습니다.
+- 개발 기록 (PoC 기록) : [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
 
 ## 1. 개발 환경 설정 가이드
 

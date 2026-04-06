@@ -5,12 +5,10 @@ This project is the backend server for an intelligent AI agent POC system built 
 
 It includes an agent that analyzes natural language input to manage Schedules, Todos, and Memos, and provides document-based Q&A through a **RAG (Retrieval-Augmented Generation)** pipeline. It also features LLM observability via Langfuse and a search environment based on PostgreSQL (pgroonga).
 
-Detailed development logs and design intentions can be found on the blog below.
-- **Development Log (PoC Log)**: [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
-
-You can test the agent through the frontend below.
-
 Frontend Project: https://github.com/devnneth/agent-poc-frontend
+
+You can find the development story of this project on the blog below.
+- Development Log (PoC Log) : [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
 
 ## 1. Development Environment Setup Guide
 
