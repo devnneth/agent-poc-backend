@@ -98,7 +98,7 @@ Edit the `app/features/agent/settings.py` file.
 134   user_confirmation_node=AgentNodeSettings(provider="openai", temperature=0, streaming=False),
 135   todo_agent_node=AgentNodeSettings(provider="openai", temperature=0.7, streaming=True),
 136   memo_agent_node=AgentNodeSettings(provider="openai", temperature=0.7, streaming=True),
-)
+137 )
 ```
 
 > Configure chat models per provider and set the models to use.
@@ -236,10 +236,10 @@ $ alembic history           # Check full migration history (verify if head is la
 │   └── todos               # Todo service layer
 │
 ├── infrastructure
-    ├── auth                # Auth infrastructure
-    ├── common  
-    ├── google              # Google infrastructure
-    ├── llm                 # LLM infrastructure
+│   ├── auth                # Auth infrastructure
+│   ├── common              # Common
+│   ├── google              # Google infrastructure
+│   ├── llm                 # LLM infrastructure
 │   ├── models              # Database schema models (SQLAlchemy)
 │   └── persistence         # Database infrastructure and checkpointer
 │

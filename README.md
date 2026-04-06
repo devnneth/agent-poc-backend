@@ -97,7 +97,7 @@ $ docker compose up -d
 134   user_confirmation_node=AgentNodeSettings(provider="openai", temperature=0, streaming=False),
 135   todo_agent_node=AgentNodeSettings(provider="openai", temperature=0.7, streaming=True),
 136   memo_agent_node=AgentNodeSettings(provider="openai", temperature=0.7, streaming=True),
-)
+137 )
 ```
 
 > 제조사별 채팅 모델 설정, 사용할 모델을 설정합니다.
@@ -235,10 +235,10 @@ $ alembic history           # 전체 마이그레이션 히스토리 확인 (hea
 │   └── todos               # 할일 서비스 레이어
 │
 ├── infrastructure
-    ├── auth                # 인증 인프라
-    ├── common  
-    ├── google              # 구글 인프라
-    ├── llm                 # LLM 인프라
+│   ├── auth                # 인증 인프라
+│   ├── common              # 공통
+│   ├── google              # 구글 인프라
+│   ├── llm                 # LLM 인프라
 │   ├── models              # 데이터베이스 스키마 모델 (SQLAlchemy)
 │   └── persistence         # 데이터베이스 인프라 및 체크포인터
 │
