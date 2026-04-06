@@ -3,7 +3,10 @@
 
 이 프로젝트는 LangGraph와 FastAPI를 기반으로 구축된 지능형 AI 에이전트 POC 시스템의 백엔드 서버입니다. 
 
-사용자의 자연어 입력을 분석하여 일정(Schedules), 할 일(Todos), 메모(Memos)를 관리하는 에이전트를 제공하며, Langfuse를 통한 LLM 관측성(Observability) 및 PostgreSQL 기반의 벡터 검색 환경을 포함하고 있습니다.
+사용자의 자연어 입력을 분석하여 일정(Schedules), 할 일(Todos), 메모(Memos)를 관리하며, **RAG 파이프라인(Retrieval-Augmented Generation)** 기능을 통해 문서 기반의 질의응답을 제공하는 에이전트를 포함하고 있습니다. 또한 Langfuse를 통한 LLM 관측성(Observability) 및 PostgreSQL(pgroonga) 기반의 검색 환경을 갖추고 있습니다.
+
+프로젝트의 상세한 개발 기록과 설계 의도는 아래 블로그에서 확인하실 수 있습니다.
+- **개발 기록 (PoC 기록)** : [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
 
 아래 프론트엔드를 통해 에이전트를 테스트 할 수 있습니다.
 
@@ -200,12 +203,10 @@ $ alembic history           # 전체 마이그레이션 히스토리 확인 (hea
 ├── scripts                 # 실행 스크립트 파일
 ├── supabase                # Supabase 설정 파일
 ├── tests                   # 테스트 파일
-├── alembic.ini             # alembic 설정 파일
+├── Dockerfile              # Docker 이미지 빌드 설정
+├── docker-compose.yml      # 도커 컴포즈 설정
 ├── main.py                 # 애플리케이션 진입점
-├── pyproject.toml          # 프로젝트 설정 파일
-├── pytest.ini              # pytest 설정 파일
-├── README.md               # README 파일
-└── uv.lock                 # uv 설정 파일
+└── pyproject.toml          # 프로젝트 설정 파일
 ```
 
 ### 2.1 앱 구조 (app/)
@@ -214,7 +215,10 @@ $ alembic history           # 전체 마이그레이션 히스토리 확인 (hea
 .
 ├── api
 │   ├── common              # 공통 유틸리티
-│   └── v1                  # 외부 노출 Restful API (채팅, 임베딩)
+│   └── v1                  # 외부 노출 API 🔥
+│       ├── agent           # 에이전트 채팅 API
+│       ├── auth            # 인증 관련 API
+│       └── knowledge       # RAG 파이프라인 관리 API (Upload, Delete 등)
 │
 ├── core    
 │   ├── config              # 애플리케이션 설정
@@ -223,29 +227,34 @@ $ alembic history           # 전체 마이그레이션 히스토리 확인 (hea
 │
 ├── features                
 │   ├── agent               # 에이전트 서비스 레이어 🔥
+│   ├── knowledge           # RAG 파이프라인 서비스 레이어 🔥
 │   ├── auth                # 인증 서비스 레이어
-│   ├── llm                 # LLM 서비스 레이어
+│   ├── llm                 # LLM/Embedding 서비스 레이어
 │   ├── memos               # 메모 서비스 레이어
 │   ├── schedules           # 일정 서비스 레이어
 │   └── todos               # 할일 서비스 레이어
 │
-└── infrastructure  
+├── infrastructure
     ├── auth                # 인증 인프라
     ├── common  
     ├── google              # 구글 인프라
     ├── llm                 # LLM 인프라
-    ├── models              # 데이터베이스 스키마 모델
-    └── persistence         # 데이터베이스 인프라
+│   ├── models              # 데이터베이스 스키마 모델 (SQLAlchemy)
+│   └── persistence         # 데이터베이스 인프라 및 체크포인터
+│
+└── workers                 # 백그라운드 태스크 워커 (RAG 처리 등) 🔥
+    └── rag_worker_main.py  # 비동기 RAG 처리 워커 진입점
 ```
 
 ### 2.2 에이전트 구조 (app/features/agent/)
 
 ```shell
 .
-├── root                    # 루트 에이전트 (의도 판별 및 일반 채팅)
-│   ├── nodes               # 노드
+├── root                    # 루트 에이전트 (의도 판별 및 RAG 연동)
+│   ├── nodes               # 그래프 노드
 │   ├── prompts             # 프롬프트
-│   └── root_graph.py       # 최상위 에이전트 시작노드
+│   ├── tools               # RAG 검색 도구 등
+│   └── root_graph.py       # 최상위 에이전트 그래프 정의
 │
 ├── schedules               # 일정 에이전트 (워크플로우 방식)
 │   ├── nodes               # 노드
@@ -274,12 +283,32 @@ $ alembic history           # 전체 마이그레이션 히스토리 확인 (hea
 └── state.py                # 에이전트 공유 상태
 ```
 
+### 2.3 RAG 파이프라인 구조 (app/features/knowledge/)
+
+```shell
+.
+├── common                              # 공통 엔티티 및 메타데이터 처리
+│   ├── chunk_persistence_service.py    # 청크 저장
+│   └── knowledge_entity.py             # RAG 파이프라인 도메인 모델
+│
+├── processing 
+│   ├── basic_pipeline                  # 기본(basic) RAG 파이프라인
+│   ├── odlh_pipeline                   # 하이브리드(odlh) RAG 파이프라인 🔥
+│   └── worker.py                       # 비동기 처리 워커 로직
+│
+└── retrieval                           # 검색 서비스
+    └── retrieval_service.py            # 하이브리드 검색 (벡터 + 키워드)
+```
+
 ## 3. 실행 스크립트
 
 ### 3.1 로컬 실행
 
 ```shell
-$ ./scripts/start.sh                # API 서버 실행
-$ ./scripts/static_analysis.sh      # 코드 정적분석 실행
+$ ./scripts/api-start.sh            # API 서버 실행 (Uvicorn)
+$ ./scripts/rag-backend.sh          # 문서 OCR 처리 백엔드 실행
+$ ./scripts/rag-worker.sh           # RAG 처리 워커 실행
+
+$ ./scripts/static-analysis.sh      # 코드 정적 분석 실행
 $ ./scripts/test.sh                 # 테스트 실행
 ```

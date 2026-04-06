@@ -1,8 +1,12 @@
 # AI Agent POC Project (Backend)
+[Korean](README.md) | English
 
 This project is the backend server for an intelligent AI agent POC system built on LangGraph and FastAPI.
 
-It provides agents to manage Schedules, Todos, and Memos by analyzing user natural language input. It includes LLM Observability via Langfuse and a vector search environment powered by PostgreSQL.
+It includes an agent that analyzes natural language input to manage Schedules, Todos, and Memos, and provides document-based Q&A through a **RAG (Retrieval-Augmented Generation)** pipeline. It also features LLM observability via Langfuse and a search environment based on PostgreSQL (pgroonga).
+
+Detailed development logs and design intentions can be found on the blog below.
+- **Development Log (PoC Log)**: [blog.develosopher.dev](https://blog.develosopher.dev/search/?q=PoC+%EA%B8%B0%EB%A1%9D)
 
 You can test the agent through the frontend below.
 
@@ -22,29 +26,30 @@ $ brew install uv
 # 2. Install Python 3.12 and agree
 $ uv python install 3.12
 
-# 3. Create virtual environment and install dependencies (perform at once)
+# 3. Create virtual environment and install dependencies (performed at once)
 $ uv sync
 ```
 
 ### 1.2. Dependent Service Setup
 
-#### 1.2.1 Docker Execution Environment
+#### 1.2.1 Docker Environment
 
 ```shell
 $ brew install docker
 
-# Once installed, run Docker Desktop from Finder.
+# Once installation is complete, run Docker Desktop from Finder.
 ```
 
 #### 1.2.2 Supabase Setup
 
 ```shell
-$ brew install supabase/tap/supabase # install cli
-$ supabase init # initialize
+$ brew install supabase/tap/supabase # Install CLI
+$ supabase init # Initialize
 ```
-##### 1.2.2.1 Google OAuth Login Setup 
 
-> Create OAuth 2.0 Client ID in Google Cloud Console, then edit `supabase/config.toml`
+##### 1.2.2.1 Google OAuth Login Setup
+
+> After creating an OAuth 2.0 Client ID in the Google Cloud Console, modify `supabase/config.toml`
 
 ```
 [auth.external.google]
@@ -55,7 +60,7 @@ client_id = "<GOOGLE_CLIENT_ID>"
 secret = "<GOOGLE_CLIENT_SECRET>"
 ```
 
-> After editing, run the command below to start the Supabase local development environment
+> After modification, run the command below to start the Supabase local development environment
 
 ```shell
 $ supabase start
@@ -68,7 +73,7 @@ $ git clone https://github.com/langfuse/langfuse.git
 $ cd langfuse
 $ docker compose up -d
 
-# Once langfuse is running properly, it is accessible at http://localhost:3000
+# Once langfuse is running normally, you can access it at http://localhost:3000
 # It is recommended to keep the cloned repository directory for service management.
 ```
 
@@ -78,10 +83,10 @@ $ docker compose up -d
 
 Edit the `app/features/agent/settings.py` file.
 
-> Configure the LLM provider to be used by each agent node.
+> Set the LLM provider to be used by each agent node.
 
 ```python
-125 # Create an instance for mapping agent node names and LLM settings
+125 # Create an instance mapping agent node names to LLM settings
 126 AGENT_MODEL_SETTINGS = AgentModelSettings(
 127   root_intent_node=AgentNodeSettings(provider="openai", temperature=0, streaming=False),
 128   general_conversation_node=AgentNodeSettings(provider="openai", temperature=0.7, streaming=True),
@@ -96,11 +101,11 @@ Edit the `app/features/agent/settings.py` file.
 )
 ```
 
-> Configure the chat model by provider, and set the model to be used.
+> Configure chat models per provider and set the models to use.
 
 ```python
 39  class ChatModelConfig(BaseModel):
-40    """Model name settings per Chat model provider"""
+40    """Chat model name settings per provider"""
 41  
 42    custom: str = "LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct-GGUF"
 43    openai: str = "gpt-4o-mini"
@@ -108,11 +113,11 @@ Edit the `app/features/agent/settings.py` file.
 46    anthropic: str = "claude-3-haiku-20240307"
 ```
 
-> Configure the embedding model by provider, and set the model to be used.
+> Configure embedding models per provider and set the models to use.
 
 ```python
 111 class EmbeddingModelConfig(BaseModel):
-112   """Model settings per Embedding model provider"""
+112   """Embedding model settings per provider"""
 113
 114   custom: EmbeddingModelSetting = EmbeddingModelSetting(name="EnverLee/bge-m3-korean-Q4_K_M-GGUF", dimension=1024)
 115   openai: EmbeddingModelSetting = EmbeddingModelSetting(name="text-embedding-3-small", dimension=1536)
@@ -122,10 +127,10 @@ Edit the `app/features/agent/settings.py` file.
 #### 1.3.2 Project Environment Configuration
 
 ```shell
-$ cp .env.example .env # copy
+$ cp .env.example .env # Copy
 ```
 
-> Once copied, edit the `.env` file
+> Once copying is complete, modify the `.env` file
 
 ```shell
 # Environment
@@ -141,16 +146,16 @@ API_V1_STR=/api/v1
 BACKEND_CORS_ORIGINS="*"
 
 # LLM
-CUSTOM_BASE_URL=""              # When using local LLM 
-CUSTOM_CHAT_URL=""              # When using local LLM
-CUSTOM_EMBEDDINGS_URL=""        # When using local LLM
-CUSTOM_RERANK_URL=""            # When using local LLM
-CUSTOM_API_KEY=""               # When using local LLM
+CUSTOM_BASE_URL=""              # For using local LLM
+CUSTOM_CHAT_URL=""              # For using local LLM
+CUSTOM_EMBEDDINGS_URL=""        # For using local LLM
+CUSTOM_RERANK_URL=""            # For using local LLM
+CUSTOM_API_KEY=""               # For using local LLM
 EMBEDDING_ENABLED=false         # If you want to generate embedding data
 
-OPENAI_API_KEY=""               # Enter OpenAI API Key.
-GEMINI_API_KEY=""               # Enter Gemini API Key.
-ANTHROPIC_API_KEY=""            # Enter Anthropic API Key.
+OPENAI_API_KEY=""               # Enter OpenAI API Key
+GEMINI_API_KEY=""               # Enter Gemini API Key
+ANTHROPIC_API_KEY=""            # Enter Anthropic API Key
 
 # Agent Config
 # See: app/core/config/agent_model_settings.py
@@ -175,36 +180,34 @@ LANGFUSE_SECRET_KEY=""          # Langfuse Secret Key
 LANGFUSE_HOST=""                # Langfuse Host
 ```
 
-### 1.4. Database Configuration
+### 1.4. Database Setup
 
-> **Important**: This project use alembic to manage schemas. In particular, the remote schema of alembic is a `private` database, so please create it in advance before proceeding.
+> **Important**: This project uses alembic to manage schemas. In particular, alembic's remote schema is a `private` database, so please create it in advance before proceeding.
 
 #### 1.4.1 Migration
 
-> Note: Check `sqlalchemy.url` in the `alembic.ini` file for alembic's DB connection settings.
+> Note: For alembic's DB connection settings, check `sqlalchemy.url` in the `alembic.ini` file.
 
 ```shell
 $ alembic current           # Check DB connection
 $ alembic upgrade head      # Run migration
 $ alembic current           # Check current local revision
-$ alembic history           # Check full migration history (check if head is latest)
+$ alembic history           # Check full migration history (verify if head is latest)
 ```
 
-## 2. Major Directory Structure (/)
+## 2. Main Directory Structure (/)
 
 ```shell
 .
-├── alembic                 # alembic migration files
+├── alembic                 # Alembic migration files
 ├── app                     # Application files 🔥
-├── scripts                 # Execution script files
+├── scripts                 # Execution scripts
 ├── supabase                # Supabase configuration files
 ├── tests                   # Test files
-├── alembic.ini             # alembic configuration file
+├── Dockerfile              # Docker image build configuration
+├── docker-compose.yml      # Docker compose configuration
 ├── main.py                 # Application entry point
-├── pyproject.toml          # Project configuration file
-├── pytest.ini              # pytest configuration file
-├── README.md               # README file
-└── uv.lock                 # uv lock file
+└── pyproject.toml          # Project configuration file
 ```
 
 ### 2.1 App Structure (app/)
@@ -213,38 +216,46 @@ $ alembic history           # Check full migration history (check if head is lat
 .
 ├── api
 │   ├── common              # Common utilities
-│   └── v1                  # External Restful API (Chat, Embedding)
+│   └── v1                  # Externally exposed APIs 🔥
+│       ├── agent           # Agent chat API
+│       ├── auth            # Auth-related API
+│       └── knowledge       # RAG pipeline management API (Upload, Delete, etc.)
 │
 ├── core    
-│   ├── config              # Application settings
-│   ├── logging.py          # Logging settings
+│   ├── config              # Application configuration
+│   ├── logging.py          # Logging configuration
 │   └── patch.py            # Application patches
 │
 ├── features                
 │   ├── agent               # Agent service layer 🔥
-│   ├── auth                # Authentication service layer
-│   ├── llm                 # LLM service layer
+│   ├── knowledge           # RAG pipeline service layer 🔥
+│   ├── auth                # Auth service layer
+│   ├── llm                 # LLM/Embedding service layer
 │   ├── memos               # Memo service layer
 │   ├── schedules           # Schedule service layer
 │   └── todos               # Todo service layer
 │
-└── infrastructure  
-    ├── auth                # Authentication infrastructure
+├── infrastructure
+    ├── auth                # Auth infrastructure
     ├── common  
     ├── google              # Google infrastructure
     ├── llm                 # LLM infrastructure
-    ├── models              # Database schema models
-    └── persistence         # Database infrastructure
+│   ├── models              # Database schema models (SQLAlchemy)
+│   └── persistence         # Database infrastructure and checkpointer
+│
+└── workers                 # Background task workers (RAG processing, etc.) 🔥
+    └── rag_worker_main.py  # Async RAG processing worker entry point
 ```
 
 ### 2.2 Agent Structure (app/features/agent/)
 
 ```shell
 .
-├── root                    # Root Agent (Intent classification & General chat)
-│   ├── nodes               # Nodes
+├── root                    # Root Agent (Intent classification & RAG integration)
+│   ├── nodes               # Graph nodes
 │   ├── prompts             # Prompts
-│   └── root_graph.py       # Root agent start node
+│   ├── tools               # RAG search tools, etc.
+│   └── root_graph.py       # Top-level agent graph definition
 │
 ├── schedules               # Schedule Agent (Workflow approach)
 │   ├── nodes               # Nodes
@@ -255,22 +266,39 @@ $ alembic history           # Check full migration history (check if head is lat
 ├── todo                    # Todo Agent (ReAct approach)
 │   ├── nodes               # Nodes
 │   ├── prompts             # Prompts
-│   ├── tools               # Toolsets (Search, Add, Edit, Delete, etc.)
+│   ├── tools               # Toolset (Search, Add, Edit, Delete, etc.)
 │   └── todo_graph.py       # Todo sub-agent start node
 │
 ├── memo                    # Memo Agent (ReAct approach)
 │   ├── nodes               # Nodes
 │   ├── prompts             # Prompts
-│   ├── tools               # Toolsets (Search, Add, Edit, Delete, etc.)
+│   ├── tools               # Toolset (Search, Add, Edit, Delete, etc.)
 │   └── memo_graph.py       # Memo sub-agent start node
 │
 ├── helpers                 
-│   ├── graph_helpers.py    # Agent graph tools
-│   └── prompt.py           # Prompt tools
+│   ├── graph_helpers.py    # Agent graph utilities
+│   └── prompt.py           # Prompt utilities
 │
-├── entity.py               # Agent entity
+├── entity.py               # Agent entities
 ├── settings.py             # Agent settings
 └── state.py                # Agent shared state
+```
+
+### 2.3 RAG Pipeline Structure (app/features/knowledge/)
+
+```shell
+.
+├── common                              # Common entities and metadata processing
+│   ├── chunk_persistence_service.py    # Chunk storage
+│   └── knowledge_entity.py             # RAG pipeline domain model
+│
+├── processing 
+│   ├── basic_pipeline                  # Basic RAG pipeline
+│   ├── odlh_pipeline                   # Hybrid (ODLH) RAG pipeline 🔥
+│   └── worker.py                       # Async processing worker logic
+│
+└── retrieval                           # Search service
+    └── retrieval_service.py            # Hybrid search (Vector + Keyword)
 ```
 
 ## 3. Execution Scripts
@@ -278,7 +306,10 @@ $ alembic history           # Check full migration history (check if head is lat
 ### 3.1 Local Execution
 
 ```shell
-$ ./scripts/start.sh                # Run API server
-$ ./scripts/static_analysis.sh      # Run static analysis
+$ ./scripts/api-start.sh            # Run API server (Uvicorn)
+$ ./scripts/rag-backend.sh          # Run Document OCR processing backend
+$ ./scripts/rag-worker.sh           # Run RAG processing worker
+
+$ ./scripts/static-analysis.sh      # Run static code analysis
 $ ./scripts/test.sh                 # Run tests
 ```

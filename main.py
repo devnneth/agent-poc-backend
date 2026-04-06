@@ -18,13 +18,19 @@ from app.core.config.environment import settings
 from app.core.logging import setup_logging
 from app.core.patch import apply_patches
 from app.infrastructure.common.exceptions import LLMError
+from app.infrastructure.llm.helpers.langfuse_callback import validate_langfuse_configuration
 
 # 애플리케이션 시작 전 전역 패치 적용 (예: Windows 이벤트 루프 설정)
 apply_patches()
 
 
+# ==================================================================================================
+# 애플리케이션 생성
+# --------------------------------------------------------------------------------------------------
+# FastAPI 인스턴스를 초기화하고 라우터, 미들웨어, 예외 핸들러를 설정함
+# ==================================================================================================
 def get_application() -> FastAPI:
-  # 1. FastAPI 인스턴스 생성
+  # FastAPI 인스턴스 생성
   application = FastAPI(
     title=settings.PROJECT_NAME,
     description=f"{settings.PROJECT_NAME} API.",
@@ -44,27 +50,34 @@ def get_application() -> FastAPI:
     cast(ExceptionHandler, unhandled_exception_handler),
   )
 
-  # 2. CORS 설정 (다른 도메인에서 API 접근 허용)
+  # CORS 설정 (다른 도메인에서 API 접근 허용)
   application.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origin_regex=settings.BACKEND_CORS_ORIGIN_REGEX,
     allow_methods=["*"],
     allow_headers=["*"],
   )
 
-  # 3. 루트 라우터
+  # 루트 라우터
   api_router_index = APIRouter()
 
+  # ------------------------------------------------------------------------------------------------
+  # 인덱스 엔드포인트
+  # ------------------------------------------------------------------------------------------------
   @api_router_index.get("/", response_model=CommonResponse)
   async def index() -> CommonResponse:
     return ok(f"{settings.PROJECT_NAME}.")
 
+  # ------------------------------------------------------------------------------------------------
+  # 헬스체크 엔드포인트
+  # ------------------------------------------------------------------------------------------------
   @api_router_index.get("/health", response_model=CommonResponse)
   async def health() -> CommonResponse:
     return ok("ok")
 
-  # 4. 라우터 등록
+  # 라우터 등록
   application.include_router(api_router_index)
   application.include_router(api_router, prefix=settings.API_V1_STR)
 
@@ -73,6 +86,7 @@ def get_application() -> FastAPI:
 
 # FastAPI 인스턴스 생성
 setup_logging(settings)
+validate_langfuse_configuration(settings)
 app = get_application()
 
 if __name__ == "__main__":
